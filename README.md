@@ -1,6 +1,6 @@
 # Ansible Automation Lab – Multi-Task Playbooks
  
-## 📌 Overview
+## Overview
  
 This project is part of my **#AWSDevOpsRestartJourney** — a hands-on effort to rebuild and strengthen my DevOps skills through practical, real-world automation exercises.
  
@@ -8,7 +8,7 @@ In this lab, I wrote two Ansible playbooks to automate common server configurati
  
 ---
  
-## 🧰 Tools & Technologies
+## Tools & Technologies
  
 - **Ansible** – Configuration management and automation
 - **Nginx** – Web server
@@ -16,7 +16,7 @@ In this lab, I wrote two Ansible playbooks to automate common server configurati
 - **YAML** – Playbook syntax
 ---
  
-## 📂 Project Structure
+## Project Structure
  
 ```
 ansible-multi-task-lab/
@@ -27,7 +27,70 @@ ansible-multi-task-lab/
 ```
  
 ---
+
+### Setting Up the Inventory File
  
+An inventory file is a list of the managed nodes (hosts/IPs, grouped and with connection details) that Ansible runs playbooks against.
+
+Before running either playbook, create a `hosts` file in the same directory and add the IP address (or hostname) of your remote managed node(s), along with the SSH connection details Ansible should use to reach them.
+ 
+```ini
+[control]
+localhost ansible_connection=local
+ 
+[webservers]
+192.168.1.100 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+ 
+# Add more managed nodes under the same group if needed
+# 192.168.1.101 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+```
+ 
+- **`[control]`** — represents the Ansible control node itself (the machine you're running these playbooks from). `ansible_connection=local` tells Ansible to run tasks directly on this host instead of connecting over SSH. You typically won't target this group with these playbooks, but it's useful to have listed for reference or for any local-only tasks later.
+- **`[webservers]`** — the remote managed node(s) these playbooks actually configure. 
+
+---
+
+### Setting Up Passwordless SSH to the Remote Machine
+ 
+Ansible connects to managed nodes over SSH, so it's best to set up key-based authentication from your control node (the machine running Ansible) to avoid being prompted for a password on every run.
+ 
+1. **Generate an SSH key pair on the control node** (skip if you already have one):
+```bash
+   ssh-keygen -t rsa -b 4096
+```
+   Press Enter to accept the defaults (no passphrase is simplest for automation).
+ 
+2. **Copy your public key to the remote machine:**
+```bash
+   ssh-copy-id ubuntu@192.168.1.100
+```
+   Replace `ubuntu` with the remote machine's SSH username and `192.168.1.100` with its IP address. Enter the remote user's password once when prompted — this installs your public key into the remote machine's `~/.ssh/authorized_keys`.
+ 
+   If `ssh-copy-id` isn't available (e.g. on some cloud images), copy it manually instead:
+```bash
+   cat ~/.ssh/id_rsa.pub | ssh ubuntu@192.168.1.100 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+ 
+3. **Verify passwordless login works:**
+```bash
+   ssh ubuntu@192.168.1.100
+```
+   You should be logged in directly, with no password prompt.
+ 
+Once this is set up, reference the same key in your `hosts` file via `ansible_ssh_private_key_file` (see below) so Ansible can authenticate without a password too.
+ 
+Test connectivity before running the playbooks:
+ 
+```bash
+ansible -i hosts all -m ping
+```
+ 
+A successful `pong` response confirms Ansible can reach and authenticate to your managed node.
+
+<img src="screenshots/ansible-ping-test.png" alt="Test connection">
+
+---
+
 ## 🗂️ Task Definition 1 – `multi-tasks.yml`
  
 **Goal:** Automate directory/file creation, install and enable Nginx, manage users/groups, set file permissions, and check disk usage on the managed node.
