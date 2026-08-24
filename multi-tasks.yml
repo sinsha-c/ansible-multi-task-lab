@@ -1,96 +1,51 @@
-# Ansible Automation Lab – Multi-Task Playbooks
- 
-## 📌 Overview
- 
-This project is part of my **#AWSDevOpsRestartJourney** — a hands-on effort to rebuild and strengthen my DevOps skills through practical, real-world automation exercises.
- 
-In this lab, I wrote two Ansible playbooks to automate common server configuration and maintenance tasks: creating directory/file structures, installing and managing Nginx, configuring users and groups, setting permissions, and running basic system health checks — all without logging into the managed nodes manually.
- 
----
- 
-## 🧰 Tools & Technologies
- 
-- **Ansible** – Configuration management and automation
-- **Nginx** – Web server
-- **Ubuntu** – Managed node OS
-- **YAML** – Playbook syntax
----
- 
-## 📂 Project Structure
- 
-```
-ansible-multi-task-lab/
-├── multi-tasks.yml               # Task Definition 1
-├── webserver-maintenance.yml     # Task Definition 2
-├── hosts                         # Inventory file
-└── README.md
-```
- 
----
- 
-## 🗂️ Task Definition 1 – `multi-tasks.yml`
- 
-**Goal:** Automate directory/file creation, install and enable Nginx, manage users/groups, set file permissions, and check disk usage on the managed node.
- 
-### What it does
-- Creates `/tmp/devops` and `/tmp/devops/info.txt` with sample content
-- Creates `/tmp/devops/config` and `/tmp/devops/config/app.conf` with app configuration
-- Installs, starts, and enables Nginx
-- Deploys a custom `index.html` web page
-- Creates a `devopsgroup` group and a `devopsuser` user, and adds the user to the group
-- Sets `/tmp/devops/info.txt` permissions to `0644`
-- Displays disk usage
-### Playbook
- 
-```yaml
 ---
 - name: Multi-Task Server Setup Playbook
   hosts: all
   become: true
- 
+
   tasks:
     - name: Create /tmp/devops directory
       ansible.builtin.file:
         path: /tmp/devops
         state: directory
         mode: '0755'
- 
+
     - name: Create /tmp/devops/info.txt with content
       ansible.builtin.copy:
         dest: /tmp/devops/info.txt
         content: |
           Welcome to Ansible
           This file was created using Ansible.
- 
+
     - name: Create /tmp/devops/config directory
       ansible.builtin.file:
         path: /tmp/devops/config
         state: directory
         mode: '0755'
- 
+
     - name: Create /tmp/devops/config/app.conf with content
       ansible.builtin.copy:
         dest: /tmp/devops/config/app.conf
         content: |
           APP_NAME=DevOps
           ENVIRONMENT=Development
- 
+
     - name: Install Nginx
       ansible.builtin.apt:
         name: nginx
         state: present
         update_cache: true
- 
+
     - name: Start Nginx service
       ansible.builtin.service:
         name: nginx
         state: started
- 
+
     - name: Enable Nginx to start on boot
       ansible.builtin.service:
         name: nginx
         enabled: true
- 
+
     - name: Deploy custom web page
       ansible.builtin.copy:
         dest: /var/www/html/index.html
@@ -101,29 +56,28 @@ ansible-multi-task-lab/
             <p>This page was deployed using Ansible.</p>
           </body>
           </html>
- 
+
     - name: Create devopsgroup group
       ansible.builtin.group:
         name: devopsgroup
         state: present
- 
+
     - name: Create devopsuser and add to devopsgroup
       ansible.builtin.user:
         name: devopsuser
         group: devopsgroup
         state: present
- 
+
     - name: Set permissions on info.txt
       ansible.builtin.file:
         path: /tmp/devops/info.txt
         mode: '0644'
- 
+
     - name: Check disk usage
       ansible.builtin.command: df -h
       register: disk_usage
       changed_when: false
- 
+
     - name: Display disk usage
       ansible.builtin.debug:
         var: disk_usage.stdout_lines
-```
