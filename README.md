@@ -28,6 +28,8 @@ ansible-multi-task-lab/
  
 ---
 
+## Prerequisite
+
 ### Setting Up the Inventory File
  
 An inventory file is a list of the managed nodes (hosts/IPs, grouped and with connection details) that Ansible runs playbooks against.
@@ -39,15 +41,14 @@ Before running either playbook, create a `hosts` file in the same directory and 
 localhost ansible_connection=local
  
 [webservers]
-192.168.1.100 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+<EC2-PUBLIC-IP> ansible_user=<username> ansible_ssh_private_key_file=~/.ssh/id_rsa
  
-# Add more managed nodes under the same group if needed
-# 192.168.1.101 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
 ```
  
 - **`[control]`** — represents the Ansible control node itself (the machine you're running these playbooks from). `ansible_connection=local` tells Ansible to run tasks directly on this host instead of connecting over SSH. You typically won't target this group with these playbooks, but it's useful to have listed for reference or for any local-only tasks later.
 - **`[webservers]`** — the remote managed node(s) these playbooks actually configure. 
-
+- Replace `<EC2-PUBLIC-IP>` with your remote machine's actual IP address (or a resolvable hostname).
+- Replace `<username>` with the SSH login username for that machine (e.g. `ubuntu`, `ec2-user`).
 ---
 
 ### Setting Up Passwordless SSH to the Remote Machine
@@ -62,14 +63,10 @@ Ansible connects to managed nodes over SSH, so it's best to set up key-based aut
  
 2. **Copy your public key to the remote machine:**
 ```bash
-   ssh-copy-id ubuntu@192.168.1.100
+   cat ~/.ssh/id_rsa.pub | ssh ubuntu@<ec2-public-ip> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
    Replace `ubuntu` with the remote machine's SSH username and `192.168.1.100` with its IP address. Enter the remote user's password once when prompted — this installs your public key into the remote machine's `~/.ssh/authorized_keys`.
- 
-   If `ssh-copy-id` isn't available (e.g. on some cloud images), copy it manually instead:
-```bash
-   cat ~/.ssh/id_rsa.pub | ssh ubuntu@192.168.1.100 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-```
+   copy it manually instead
  
 3. **Verify passwordless login works:**
 ```bash
@@ -91,7 +88,7 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
 
 ---
 
-## 🗂️ Task Definition 1 – `multi-tasks.yml`
+## Task Definition 1 – `multi-tasks.yml`
  
 **Goal:** Automate directory/file creation, install and enable Nginx, manage users/groups, set file permissions, and check disk usage on the managed node.
  
@@ -108,7 +105,7 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
 ```yaml
 ---
 - name: Multi-Task Server Setup Playbook
-  hosts: all
+  hosts: webservers
   become: true
  
   tasks:
@@ -139,7 +136,7 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
           ENVIRONMENT=Development
  
     - name: Install Nginx
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name: nginx
         state: present
         update_cache: true
@@ -189,4 +186,20 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
     - name: Display disk usage
       ansible.builtin.debug:
         var: disk_usage.stdout_lines
+
 ```
+
+### How to Run
+ 
+```bash
+# Task Definition 1
+ansible-playbook -i hosts multi-tasks.yml
+```
+
+Playbook Execution 
+
+<img src="screenshots/multi-tasks-execution.png" alt="Multi tasks playbook execution">
+
+Files, Directories and nginx status
+
+<img src="screenshots/task1-files-nginx-status.png" alt="Task 1 files and directories">

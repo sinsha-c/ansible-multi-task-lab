@@ -1,51 +1,51 @@
 ---
 - name: Multi-Task Server Setup Playbook
-  hosts: all
+  hosts: webservers
   become: true
-
+ 
   tasks:
     - name: Create /tmp/devops directory
       ansible.builtin.file:
         path: /tmp/devops
         state: directory
         mode: '0755'
-
+ 
     - name: Create /tmp/devops/info.txt with content
       ansible.builtin.copy:
         dest: /tmp/devops/info.txt
         content: |
           Welcome to Ansible
           This file was created using Ansible.
-
+ 
     - name: Create /tmp/devops/config directory
       ansible.builtin.file:
         path: /tmp/devops/config
         state: directory
         mode: '0755'
-
+ 
     - name: Create /tmp/devops/config/app.conf with content
       ansible.builtin.copy:
         dest: /tmp/devops/config/app.conf
         content: |
           APP_NAME=DevOps
           ENVIRONMENT=Development
-
+ 
     - name: Install Nginx
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name: nginx
         state: present
         update_cache: true
-
+ 
     - name: Start Nginx service
       ansible.builtin.service:
         name: nginx
         state: started
-
+ 
     - name: Enable Nginx to start on boot
       ansible.builtin.service:
         name: nginx
         enabled: true
-
+ 
     - name: Deploy custom web page
       ansible.builtin.copy:
         dest: /var/www/html/index.html
@@ -56,28 +56,28 @@
             <p>This page was deployed using Ansible.</p>
           </body>
           </html>
-
+ 
     - name: Create devopsgroup group
       ansible.builtin.group:
         name: devopsgroup
         state: present
-
+ 
     - name: Create devopsuser and add to devopsgroup
       ansible.builtin.user:
         name: devopsuser
         group: devopsgroup
         state: present
-
+ 
     - name: Set permissions on info.txt
       ansible.builtin.file:
         path: /tmp/devops/info.txt
         mode: '0644'
-
+ 
     - name: Check disk usage
       ansible.builtin.command: df -h
       register: disk_usage
       changed_when: false
-
+ 
     - name: Display disk usage
       ansible.builtin.debug:
         var: disk_usage.stdout_lines
