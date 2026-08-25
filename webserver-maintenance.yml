@@ -1,0 +1,127 @@
+---
+- name: Webserver Maintenance Playbook
+  hosts: ubuntu_servers
+  become: true
+ 
+  tasks:
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+ 
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - curl
+          - git
+          - tree
+        state: present
+ 
+    - name: Start Nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+ 
+    - name: Enable Nginx to start on boot
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+ 
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /opt/backups
+        state: directory
+        mode: '0755'
+ 
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /opt/myapp
+        state: directory
+        mode: '0755'
+ 
+    - name: Create application file with content
+      ansible.builtin.copy:
+        dest: /opt/myapp/app.txt
+        content: |
+          My Application
+          Version: 1.0
+          Environment: Production
+        mode: '0644'
+ 
+    - name: Create maintenance file with content
+      ansible.builtin.copy:
+        dest: /opt/myapp/maintenance.txt
+        content: |
+          Server configured and maintained using Ansible.
+        mode: '0644'
+ 
+    - name: Deploy custom Nginx web page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+          <body>
+            <h1>DevOps Training Server</h1>
+            <p>Configured using Ansible.</p>
+          </body>
+          </html>
+ 
+    - name: Set permissions on /opt/myapp
+      ansible.builtin.file:
+        path: /opt/myapp
+        mode: '0755'
+ 
+    - name: Set permissions on app.txt
+      ansible.builtin.file:
+        path: /opt/myapp/app.txt
+        mode: '0644'
+ 
+    - name: Set permissions on maintenance.txt
+      ansible.builtin.file:
+        path: /opt/myapp/maintenance.txt
+        mode: '0644'
+ 
+    - name: Check Nginx status
+      ansible.builtin.command: systemctl status nginx
+      register: nginx_status
+      changed_when: false
+ 
+    - name: Display Nginx status
+      ansible.builtin.debug:
+        var: nginx_status.stdout_lines
+ 
+    - name: Check disk usage
+      ansible.builtin.command: df -h
+      register: disk_usage
+      changed_when: false
+ 
+    - name: Display disk usage
+      ansible.builtin.debug:
+        var: disk_usage.stdout_lines
+ 
+    - name: Check available memory
+      ansible.builtin.command: free -h
+      register: memory_usage
+      changed_when: false
+ 
+    - name: Display available memory
+      ansible.builtin.debug:
+        var: memory_usage.stdout_lines
+ 
+    - name: Display hostname
+      ansible.builtin.command: hostname
+      register: server_hostname
+      changed_when: false
+ 
+    - name: Show hostname
+      ansible.builtin.debug:
+        var: server_hostname.stdout
+ 
+    - name: Check Nginx version
+      ansible.builtin.command: nginx -v
+      register: nginx_version
+      changed_when: false
+ 
+    - name: Display Nginx version
+      ansible.builtin.debug:
+        var: nginx_version.stderr
