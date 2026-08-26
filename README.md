@@ -355,7 +355,7 @@ Custom webpage created through ansible
 > **Note on managed node OS:** `multi-tasks.yml` (Task Definition 1) targets **Amazon Linux** and uses the `dnf` module with the `/usr/share/nginx/html` docroot. `webserver-maintenance.yml` (Task Definition 2) targets **Ubuntu** and uses the `apt` module with the `/var/www/html` docroot, as above. Make sure your `hosts` inventory file points each playbook at a managed node running the matching OS — running `apt` tasks against Amazon Linux (or `dnf` tasks against Ubuntu) will fail, since neither package manager exists on the other distro.
 > Also add inventory name as `ubuntu_servers` in `hosts` file after adding control node id_rsa key to
  
-## ▶️ How to Run
+### How to Run
  
 ```bash
 # Task Definition 2
