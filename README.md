@@ -206,6 +206,7 @@ Custom webpage created through ansible
 
 <img src="screenshots/task1-custom-nginxpage.png" alt="Task 1 files and directories">
 
+---
 
 ## Task Definition 2 – `webserver-maintenance.yml`
  
