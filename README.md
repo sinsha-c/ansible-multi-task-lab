@@ -362,8 +362,38 @@ Custom webpage created through ansible
 ansible-playbook -i hosts webserver-maintenance.yml
 ```
 
-### Screenshot
+### Screenshots
+ Ansible displays Disk Usage of managed node server.
+
+<img src="screenshots/task2-disk-usage.png">
+
+Display Nginx status
+
+<img src="screenshots/task2-nginx-status.png">
  
-<img src="screenshots/task-definition-2.png" alt="Task Definition 2">
+Check available memory, hostname, nginx version.
+<img src="screenshots/task2-mem-nginx.png">
+
+Final nginx webserver page on browser
+<img src="screenshots/task2-nginx-web-page.png">
+
 ---
+
+## Key Learnings
+ 
+- Structuring multi-task playbooks with clear, single-responsibility tasks
+- Managing files, directories, and permissions declaratively with Ansible modules
+- Installing and managing services (Nginx) with `apt`/`dnf` and `service` modules across different Linux distros
+- Creating users/groups and controlling access with Ansible
+- Running and capturing ad-hoc system commands (`df`, `free`, `hostname`, `nginx -v`) with `command` + `debug`/`register`
+
+---
+
+## Author
+
+**Sinsha C**
+
+[![GitHub](https://img.shields.io/badge/GitHub-sinsha--c-181717?style=flat&logo=github&logoColor=white)](https://github.com/sinsha-c)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-sinshac-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/sinshac)
+ 
   
