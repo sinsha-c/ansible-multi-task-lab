@@ -35,7 +35,7 @@
         name: nginx
         state: present
         update_cache: true
- 
+        
     - name: Start Nginx service
       ansible.builtin.service:
         name: nginx
@@ -48,7 +48,7 @@
  
     - name: Deploy custom web page
       ansible.builtin.copy:
-        dest: /var/www/html/index.html
+        dest: /usr/share/nginx/html/index.html
         content: |
           <html>
           <body>
@@ -56,7 +56,7 @@
             <p>This page was deployed using Ansible.</p>
           </body>
           </html>
- 
+
     - name: Create devopsgroup group
       ansible.builtin.group:
         name: devopsgroup
