@@ -65,8 +65,6 @@ Ansible connects to managed nodes over SSH, so it's best to set up key-based aut
 ```bash
    cat ~/.ssh/id_rsa.pub | ssh ubuntu@<ec2-public-ip> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
-   Replace `ubuntu` with the remote machine's SSH username and `192.168.1.100` with its IP address. Enter the remote user's password once when prompted — this installs your public key into the remote machine's `~/.ssh/authorized_keys`.
-   copy it manually instead
  
 3. **Verify passwordless login works:**
 ```bash
@@ -90,13 +88,13 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
 
 ## Task Definition 1 – `multi-tasks.yml`
  
-**Goal:** Automate directory/file creation, install and enable Nginx, manage users/groups, set file permissions, and check disk usage on the managed node.
+**Goal:** Automate directory/file creation, install and enable Nginx, manage users/groups, set file permissions, and check disk usage on the managed node (Here I have taken Amazon Linux). 
  
 ### What it does
 - Creates `/tmp/devops` and `/tmp/devops/info.txt` with sample content
 - Creates `/tmp/devops/config` and `/tmp/devops/config/app.conf` with app configuration
 - Installs, starts, and enables Nginx
-- Deploys a custom `index.html` web page
+- Deploys a custom `index.html` web page on Amazon linux
 - Creates a `devopsgroup` group and a `devopsuser` user, and adds the user to the group
 - Sets `/tmp/devops/info.txt` permissions to `0644`
 - Displays disk usage
@@ -153,7 +151,7 @@ A successful `pong` response confirms Ansible can reach and authenticate to your
  
     - name: Deploy custom web page
       ansible.builtin.copy:
-        dest: /var/www/html/index.html
+        dest: /usr/share/nginx/html/index.html
         content: |
           <html>
           <body>
@@ -203,3 +201,199 @@ Playbook Execution
 Files, Directories and nginx status
 
 <img src="screenshots/task1-files-nginx-status.png" alt="Task 1 files and directories">
+
+Custom webpage created through ansible
+
+<img src="screenshots/task1-custom-nginxpage.png" alt="Task 1 files and directories">
+
+
+## Task Definition 2 – `webserver-maintenance.yml`
+ 
+**Goal:** Automate routine web server maintenance on a managed **Ubuntu** server — package updates, Nginx setup, application directory structure, permissions, and system health checks.
+ 
+### What it does
+- Updates the APT package cache
+- Installs `nginx`, `curl`, `git`, and `tree`
+- Starts and enables Nginx
+- Creates `/opt/backups` and `/opt/myapp`
+- Creates `/opt/myapp/app.txt` and `/opt/myapp/maintenance.txt` with content
+- Deploys a custom Nginx web page
+- Sets permissions on `/opt/myapp`, `app.txt`, and `maintenance.txt`
+- Verifies Nginx status, disk usage, memory, hostname, and Nginx version
+### Playbook
+ 
+```yaml
+---
+- name: Webserver Maintenance Playbook
+  hosts: ubuntu_servers
+  become: true
+ 
+  tasks:
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+ 
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - curl
+          - git
+          - tree
+        state: present
+ 
+    - name: Start Nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+ 
+    - name: Enable Nginx to start on boot
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+ 
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /opt/backups
+        state: directory
+        mode: '0755'
+ 
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /opt/myapp
+        state: directory
+        mode: '0755'
+ 
+    - name: Create application file with content
+      ansible.builtin.copy:
+        dest: /opt/myapp/app.txt
+        content: |
+          My Application
+          Version: 1.0
+          Environment: Production
+        mode: '0644'
+ 
+    - name: Create maintenance file with content
+      ansible.builtin.copy:
+        dest: /opt/myapp/maintenance.txt
+        content: |
+          Server configured and maintained using Ansible.
+        mode: '0644'
+ 
+    - name: Deploy custom Nginx web page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+          <body>
+            <h1>DevOps Training Server</h1>
+            <p>Configured using Ansible.</p>
+          </body>
+          </html>
+ 
+    - name: Set permissions on /opt/myapp
+      ansible.builtin.file:
+        path: /opt/myapp
+        mode: '0755'
+ 
+    - name: Set permissions on app.txt
+      ansible.builtin.file:
+        path: /opt/myapp/app.txt
+        mode: '0644'
+ 
+    - name: Set permissions on maintenance.txt
+      ansible.builtin.file:
+        path: /opt/myapp/maintenance.txt
+        mode: '0644'
+ 
+    - name: Check Nginx status
+      ansible.builtin.command: systemctl status nginx
+      register: nginx_status
+      changed_when: false
+ 
+    - name: Display Nginx status
+      ansible.builtin.debug:
+        var: nginx_status.stdout_lines
+ 
+    - name: Check disk usage
+      ansible.builtin.command: df -h
+      register: disk_usage
+      changed_when: false
+ 
+    - name: Display disk usage
+      ansible.builtin.debug:
+        var: disk_usage.stdout_lines
+ 
+    - name: Check available memory
+      ansible.builtin.command: free -h
+      register: memory_usage
+      changed_when: false
+ 
+    - name: Display available memory
+      ansible.builtin.debug:
+        var: memory_usage.stdout_lines
+ 
+    - name: Display hostname
+      ansible.builtin.command: hostname
+      register: server_hostname
+      changed_when: false
+ 
+    - name: Show hostname
+      ansible.builtin.debug:
+        var: server_hostname.stdout
+ 
+    - name: Check Nginx version
+      ansible.builtin.command: nginx -v
+      register: nginx_version
+      changed_when: false
+ 
+    - name: Display Nginx version
+      ansible.builtin.debug:
+        var: nginx_version.stderr
+```
+ 
+> **Note on managed node OS:** `multi-tasks.yml` (Task Definition 1) targets **Amazon Linux** and uses the `dnf` module with the `/usr/share/nginx/html` docroot. `webserver-maintenance.yml` (Task Definition 2) targets **Ubuntu** and uses the `apt` module with the `/var/www/html` docroot, as above. Make sure your `hosts` inventory file points each playbook at a managed node running the matching OS — running `apt` tasks against Amazon Linux (or `dnf` tasks against Ubuntu) will fail, since neither package manager exists on the other distro.
+> Also add inventory name as `ubuntu_servers` in `hosts` file after adding control node id_rsa key to
+ 
+## ▶️ How to Run
+ 
+```bash
+# Task Definition 2
+ansible-playbook -i hosts webserver-maintenance.yml
+```
+
+### Screenshots
+ Ansible displays Disk Usage of managed node server.
+
+<img src="screenshots/task2-disk-usage.png">
+
+Display Nginx status
+
+<img src="screenshots/task2-nginx-status.png">
+ 
+Check available memory, hostname, nginx version.
+<img src="screenshots/task2-mem-nginx.png">
+
+Final nginx webserver page on browser
+<img src="screenshots/task2-nginx-web-page.png">
+
+---
+
+## Key Learnings
+ 
+- Structuring multi-task playbooks with clear, single-responsibility tasks
+- Managing files, directories, and permissions declaratively with Ansible modules
+- Installing and managing services (Nginx) with `apt`/`dnf` and `service` modules across different Linux distros
+- Creating users/groups and controlling access with Ansible
+- Running and capturing ad-hoc system commands (`df`, `free`, `hostname`, `nginx -v`) with `command` + `debug`/`register`
+
+---
+
+## Author
+
+**Sinsha C**
+
+[![GitHub](https://img.shields.io/badge/GitHub-sinsha--c-181717?style=flat&logo=github&logoColor=white)](https://github.com/sinsha-c)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-sinshac-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/sinshac)
+ 
+  
